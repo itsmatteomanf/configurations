@@ -18,7 +18,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_DB: ${POSTGRES_DB}
     networks:
-      offline:
+      authentik:
   redis:
     image: docker.io/library/redis:alpine
     container_name: authentik-redis
@@ -35,7 +35,7 @@ services:
     volumes:
       - redis:/data
     networks:
-      offline:
+      authentik:
   server:
     image: ghcr.io/goauthentik/server:2024.2.2
     container_name: authentik-server
@@ -72,7 +72,7 @@ services:
       - redis
     networks:
       macvlan:
-      offline:
+      authentik:
   worker:
     image: ghcr.io/goauthentik/server:2024.2.2
     container_name: authentik-worker
@@ -104,7 +104,7 @@ services:
       - postgresql
       - redis
     networks:
-      offline:
+      authentik:
 
 volumes:
   database:
@@ -116,6 +116,5 @@ networks:
   macvlan:
     name: macvlan-network
     external: true
-  offline:
-    name: offline
-    external: true
+  authentik:
+    name: authentik
