@@ -1,0 +1,27 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    command: -H unix:///var/run/docker.sock
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.portainer-frontend.rule: ${PORTAINER_TRAEFIK_RULE}
+      traefik.http.routers.portainer-frontend.entrypoints: 'https'
+      traefik.http.services.portainer-frontend.loadbalancer.server.port: '9000'
+      traefik.http.routers.portainer-frontend.service: 'portainer-frontend'
+      traefik.http.routers.portainer-frontend.tls.certresolver: 'production'
+    networks:
+      macvlan:
+
+networks:
+  macvlan:
+    name: macvlan-network
+    external: true
+
+volumes:
+  portainer_data:
+    external: true

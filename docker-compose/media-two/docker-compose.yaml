@@ -1,0 +1,92 @@
+services:
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr-two
+    restart: unless-stopped
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Rome
+    volumes:
+      - /mnt/config/containers/radarr-1080p/config:/config
+      - /mnt/rclone/plex:/data
+      - /mnt/data/containers/qbittorrent-backend/downloads:/qbittorrent
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.radarr-two.service: 'radarr-two'
+      traefik.http.routers.radarr-two.entrypoints: 'https'
+      traefik.http.routers.radarr-two.rule: 'Host(`radarr-two.cosmo.ts.manfredi.io`)'
+      traefik.http.routers.radarr-two.tls: 'true'
+      traefik.http.routers.radarr-two.tls.certresolver: 'production'
+      traefik.http.routers.radarr-two.middlewares: 'radarr-auth@file'
+      traefik.http.services.radarr-two.loadbalancer.server.port: '7878'
+    # sysctls:
+    #  - net.ipv6.conf.all.disable_ipv6=1
+    networks:
+      macvlan:
+        ipv4_address: 10.13.0.241
+        ipv6_address: 2a01:4f8:2201:ff00:eeee:ffff:0a0d:00f1
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr-two
+    restart: unless-stopped
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Rome
+    volumes:
+      - /mnt/config/containers/sonarr-1080p/config:/config
+      - /mnt/rclone/plex:/data
+      - /mnt/data/containers/qbittorrent-backend/downloads:/qbittorrent
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.sonarr-two.service: 'sonarr-two'
+      traefik.http.routers.sonarr-two.entrypoints: 'https'
+      traefik.http.routers.sonarr-two.rule: 'Host(`sonarr-two.cosmo.ts.manfredi.io`)'
+      traefik.http.routers.sonarr-two.tls: 'true'
+      traefik.http.routers.sonarr-two.tls.certresolver: 'production'
+      traefik.http.routers.sonarr-two.middlewares: 'sonarr-auth@file'
+      traefik.http.services.sonarr-two.loadbalancer.server.port: '8989'
+    # sysctls:
+    #   - net.ipv6.conf.all.disable_ipv6=1
+    networks:
+      macvlan:
+        ipv4_address: 10.13.0.242
+        ipv6_address: 2a01:4f8:2201:ff00:eeee:ffff:0a0d:00f2
+
+  unpackerr:
+    image: golift/unpackerr
+    container_name: unpackerr-two
+    volumes:
+      - /mnt/data/containers/qbittorrent-backend/downloads:/downloads
+    restart: unless-stopped
+    user: 1000:1000
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Rome
+      # Sonarr Config
+      UN_SONARR_0_URL: http://sonarr-two:8989
+      UN_SONARR_0_API_KEY: ${UN_SONARR_0_API_KEY:?Set UN_SONARR_0_API_KEY in .env}
+      UN_SONARR_0_PATHS_0: /downloads/sonarr-tv-two
+      UN_SONARR_0_PROTOCOLS: torrent
+      UN_SONARR_0_TIMEOUT: 10s
+      UN_SONARR_0_DELETE_ORIG: false
+      UN_SONARR_0_DELETE_DELAY: 5m
+      # Radarr Config
+      UN_RADARR_0_URL: http://radarr-two:7878
+      UN_RADARR_0_API_KEY: ${UN_RADARR_0_API_KEY:?Set UN_RADARR_0_API_KEY in .env}
+      UN_RADARR_0_PATHS_0: /downloads/radarr-movies-two
+      UN_RADARR_0_PROTOCOLS: torrent
+      UN_RADARR_0_TIMEOUT: 10s
+      UN_RADARR_0_DELETE_ORIG: false
+      UN_RADARR_0_DELETE_DELAY: 5m
+    networks:
+      macvlan:
+
+
+networks:
+  macvlan:
+    name: macvlan-network
+    external: true

@@ -1,0 +1,113 @@
+services:
+  gluetun:
+    container_name: qbittorrent-gluetun
+    hostname: qbittorrent
+    image: qmcgaw/gluetun:v3
+    cap_add:
+      - net_admin
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    environment:
+      # Poetic Imp - [key omitted]
+      VPN_SERVICE_PROVIDER: mullvad
+      VPN_TYPE: wireguard
+      WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY:?Set WIREGUARD_PRIVATE_KEY in .env}
+      WIREGUARD_ADDRESSES: 10.65.61.210/32,fc00:bbbb:bbbb:bb01::2:3dd1/128
+      DNS_ADDRESS: 10.64.0.1
+      SERVER_CITIES: Frankfurt
+      OWNED_ONLY: yes
+      UPDATER_PERIOD: 24h
+    networks:
+      macvlan:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent-backend
+    network_mode: 'service:gluetun'
+    restart: unless-stopped
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Etc/UTC
+      WEBUI_PORT: 8080
+      TORRENTING_PORT: 6881
+    volumes:
+      - /mnt/data/containers/qbittorrent-backend/downloads:/downloads
+      - /mnt/config/containers/qbittorrent-backend/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.qbittorrent.service: 'qbittorrent'
+      traefik.http.routers.qbittorrent.entrypoints: 'https'
+      traefik.http.routers.qbittorrent.rule: 'Host(`qbittorrent.cosmo.ts.manfredi.io`)'
+      traefik.http.routers.qbittorrent.tls: 'true'
+      traefik.http.routers.qbittorrent.tls.certresolver: 'production'
+      traefik.http.services.qbittorrent.loadbalancer.server.port: '8080'
+  jackett-free:
+    image: lscr.io/linuxserver/jackett
+    container_name: jackett-free
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Rome
+      AUTO_UPDATE: true #optional
+    volumes:
+      - /mnt/config/containers/jackett-free/config:/config
+      - /mnt/config/containers/jackett-free/downloads:/downloads
+    restart: unless-stopped
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.jackett-free.service: 'jackett-free'
+      traefik.http.routers.jackett-free.entrypoints: 'https'
+      traefik.http.routers.jackett-free.rule: 'Host(`jackett-free.cosmo.ts.manfredi.io`)'
+      traefik.http.routers.jackett-free.tls: 'true'
+      traefik.http.routers.jackett-free.tls.certresolver: 'production'
+      traefik.http.services.jackett-free.loadbalancer.server.port: '9117'
+    networks:
+      macvlan:
+  jackett-paid:
+    image: lscr.io/linuxserver/jackett
+    container_name: jackett-paid
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Rome
+      AUTO_UPDATE: true #optional
+    volumes:
+      - /mnt/config/containers/jackett-paid/config:/config
+      - /mnt/config/containers/jackett-paid/downloads:/downloads
+    restart: unless-stopped
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.jackett-paid.service: 'jackett-paid'
+      traefik.http.routers.jackett-paid.entrypoints: 'https'
+      traefik.http.routers.jackett-paid.rule: 'Host(`jackett-paid.cosmo.ts.manfredi.io`)'
+      traefik.http.routers.jackett-paid.tls: 'true'
+      traefik.http.routers.jackett-paid.tls.certresolver: 'production'
+      traefik.http.services.jackett-paid.loadbalancer.server.port: '9118'
+    networks:
+      macvlan:
+  flaresolverr:
+    image: flaresolverr/flaresolverr # mirror - ghcr.io/flaresolverr/flaresolverr
+    container_name: flaresolverr
+    environment:
+      LOG_LEVEL: info
+      LOG_HTML: false
+      CAPTCHA_SOLVER: none
+      TZ: Europe/Rome
+    restart: unless-stopped
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.flaresolverr.service: 'flaresolverr'
+      traefik.http.routers.flaresolverr.entrypoints: 'https'
+      traefik.http.routers.flaresolverr.rule: 'Host(`flaresolverr.cosmo.ts.manfredi.io`)'
+      traefik.http.routers.flaresolverr.tls: 'true'
+      traefik.http.routers.flaresolverr.tls.certresolver: 'production'
+      traefik.http.services.flaresolverr.loadbalancer.server.port: '8197'
+    networks:
+      macvlan:
+
+
+networks:
+  macvlan:
+    name: macvlan-network
+    external: true

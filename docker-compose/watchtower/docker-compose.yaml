@@ -1,0 +1,21 @@
+services:
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_CLEANUP: 'true'
+      WATCHTOWER_SCHEDULE: 17 17 4 * *
+      WATCHTOWER_NOTIFICATIONS: shoutrrr
+      WATCHTOWER_NOTIFICATION_URL: ${WATCHTOWER_NOTIFICATION_URL}
+      WATCHTOWER_NOTIFICATION_TEMPLATE: '{{range .}}{{.Time.Format "2006-01-02 15:04:05"}} ({{.Level}}): {{.Message}}{{println}}{{end}}'
+    networks:
+      online:
+
+networks:
+  online:
+    name: online
+    external: true
