@@ -1,0 +1,25 @@
+services:
+  scim:
+    container_name: 1password-scim-bridge
+    image: 1password/scim
+    networks:
+      macvlan:
+      1password:
+    environment:
+      OP_SESSION: ${OP_SESSION:?Set OP_SESSION in .env}
+      OP_LETSENCRYPT_DOMAIN:
+      OP_REDIS_URL: redis://redis:6379
+    restart: always
+  redis:
+    container_name: 1password-redis
+    image: redis
+    networks:
+      1password:
+    restart: always
+
+networks:
+  macvlan:
+    name: macvlan-network
+    external: true
+  1password:
+    name: 1password

@@ -1,0 +1,70 @@
+services:
+  gluetun:
+    container_name: plex-gluetun
+    hostname: plex
+    image: qmcgaw/gluetun:v3
+    cap_add:
+      - net_admin
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    environment:
+      # Hip Dove - [key omitted]
+      VPN_SERVICE_PROVIDER: mullvad
+      VPN_TYPE: wireguard
+      WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY:?Set WIREGUARD_PRIVATE_KEY in .env}
+      WIREGUARD_ADDRESSES: 10.65.94.242/32,fc00:bbbb:bbbb:bb01::2:5ef1/128
+      DNS_ADDRESS: 10.64.0.1
+      SERVER_CITIES: Frankfurt
+      OWNED_ONLY: yes
+      UPDATER_PERIOD: 24h
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.plex.service: 'plex'
+      traefik.http.routers.plex.entrypoints: 'https'
+      traefik.http.routers.plex.rule: 'Host(`plex.cosmo.ts.manfredi.io`)'
+      traefik.http.routers.plex.tls: 'true'
+      traefik.http.routers.plex.tls.certresolver: 'production'
+      traefik.http.services.plex.loadbalancer.server.port: '32400'
+      traefik.http.routers.tautulli.service: 'tautulli'
+      traefik.http.routers.tautulli.entrypoints: 'https'
+      traefik.http.routers.tautulli.rule: 'Host(`tautulli.cosmo.ts.manfredi.io`)'
+      traefik.http.routers.tautulli.tls: 'true'
+      traefik.http.routers.tautulli.tls.certresolver: 'production'
+      traefik.http.services.tautulli.loadbalancer.server.port: '8181'
+    networks:
+      macvlan:
+  plex:
+    container_name: plex-backend
+    image: plexinc/pms-docker
+    restart: unless-stopped
+    network_mode: 'service:gluetun'
+    environment:
+      TZ: Europe/Rome
+      VERSION: docker
+      PUID: 1000
+      PGID: 1000
+      PLEX_CLAIM: ${PLEX_CLAIM:?Set PLEX_CLAIM in .env}
+    volumes:
+      - /mnt/config/containers/plex/config:/config
+      - /mnt/rclone/plex:/data
+      - /mnt/config/containers/plex/transcode:/transcode
+      - /mnt/config/containers/plex/backup:/backup
+  tautulli:
+    image: ghcr.io/tautulli/tautulli
+    container_name: tautulli
+    restart: unless-stopped
+    network_mode: 'service:gluetun'
+    volumes:
+      - /mnt/config/containers/tautulli/config:/config
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Rome
+
+networks:
+  macvlan:
+    name: macvlan-network
+    external: true
+  online:
+    name: online
+    external: true
